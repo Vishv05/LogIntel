@@ -1,0 +1,132 @@
+version: "3.8"
+
+services:
+  # 1. Relational Database for Application Metadata & RBAC
+  postgres:
+    image: postgres:15-alpine
+    container_name: logintel-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-logintel}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - logintel-network
+
+  # 2. Centralized Log Storage & Search Engine
+  opensearch:
+    image: opensearchproject/opensearch:2.12.0
+    container_name: logintel-opensearch
+    restart: unless-stopped
+    environment:
+      - cluster.name=logintel-cluster
+      - node.name=logintel-node-01
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "DISABLE_INSTALL_DEMO_CONFIG=true"
+      - "DISABLE_SECURITY_PLUGIN=true"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    ports:
+      - "9200:9200"
+      - "9600:9600"
+    volumes:
+      - opensearch_data:/usr/share/opensearch/data
+    networks:
+      - logintel-network
+
+  # 3. Log Ingestion & Forwarding Layer
+  fluent-bit:
+    image: fluent/fluent-bit:3.0
+    container_name: logintel-fluent-bit
+    restart: unless-stopped
+    volumes:
+      - ./fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
+      - ./fluent-bit/parsers.conf:/fluent-bit/etc/parsers.conf:ro
+    ports:
+      - "8888:8888"        # HTTP Ingestion
+      - "5140:5140/udp"    # Syslog UDP
+    depends_on:
+      - opensearch
+      - backend
+    networks:
+      - logintel-network
+
+  # 4. FastAPI Backend Application & Threat Detection Engine
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: logintel-backend
+    restart: unless-stopped
+    environment:
+      - ENVIRONMENT=production
+      - SECRET_KEY=${SECRET_KEY:-logintel-super-secret-key-prod-2026}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-logintel}
+      - OPENSEARCH_HOST=opensearch
+      - OPENSEARCH_PORT=9200
+      - OPENSEARCH_USE_SSL=false
+      - SYSLOG_ENABLED=true
+    ports:
+      - "8000:8000"
+      - "5141:5140/udp"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      opensearch:
+        condition: service_started
+    networks:
+      - logintel-network
+
+  # 5. React Web Dashboard UI
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: logintel-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - logintel-network
+
+  # 6. Heterogeneous Log Simulator (Automated generator & scenarios)
+  log-simulator:
+    build:
+      context: ./log-simulator
+      dockerfile: Dockerfile
+    container_name: logintel-simulator
+    restart: unless-stopped
+    environment:
+      - API_URL=http://backend:8000/api/logs/ingest
+      - SIM_MODE=stream
+      - INTERVAL=3.0
+    depends_on:
+      - backend
+    networks:
+      - logintel-network
+
+volumes:
+  postgres_data:
+  opensearch_data:
+
+networks:
+  logintel-network:
+    driver: bridge
