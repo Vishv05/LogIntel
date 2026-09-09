@@ -413,19 +413,6 @@ LogIntel (Nexus Hackathon)/
 
 ---
 
-## 🎯 Viva & Evaluation Q&A Cheat Sheet
-
-| Question | Answer & Technical Rationale |
-| :--- | :--- |
-| **Why did you build dual portals?** | Separation of duties. A SOC Analyst needs high-velocity triage tools (timelines, logs, IOC lookups, AI summaries) without administrative clutter. An Administrator requires infrastructure visibility (topology maps, health heartbeats, ingestion throttling, retention, and immutable audit logs). |
-| **How does LogIntel achieve sub-second search across millions of logs?** | LogIntel leverages OpenSearch (an open-source distributed Lucene-based search engine) using inverted indices, keyword field analyzers, and date-range index partitioning (`logintel-logs-*`). For local development, it provides a seamless in-memory/SQLite full-text fallback. |
-| **How does incident correlation prevent alert fatigue?** | Instead of bombarding the analyst with 100 individual "Failed Login" alerts, LogIntel's `correlation_service.py` clusters alerts sharing common attributes (e.g., origin IP `198.51.100.23` attacking `admin`) into a single **Incident** with a chronological kill chain. |
-| **How is the Risk Score calculated?** | Using a multi-factor composite formula in `risk_service.py` that computes base severity + asset criticality multiplier + attack recurrence velocity + blast radius, normalizing to a clean 0–100 scale. |
-| **How does the AI Explainer work?** | It analyzes the incident's correlated alerts, MITRE techniques, affected assets, and timeline sequence to generate a synthesized plain-language narrative, root-cause assessment, and actionable mitigation recommendations. |
-| **What happens if OpenSearch goes down?** | The platform features a resilient dual-mode storage adapter. The API continues operating uninterrupted by falling back to local storage, ensuring zero downtime during demonstration or single-node evaluation. |
-
----
-
 ## 📜 License
 
 Developed for the **Nexus Hackathon**. All rights reserved © 2026.
