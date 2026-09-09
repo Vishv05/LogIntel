@@ -1,0 +1,153 @@
+version: "3.8"
+
+services:
+  # 1. Relational Database for Application Metadata & RBAC (Protected - Internal Mesh Only)
+  postgres:
+    image: postgres:15-alpine
+    container_name: logintel-postgres-prod
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-logintel}
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - logintel-prod-network
+    # NOT exposed to public host ports in production (Security Hardened)
+
+  # 2. Centralized Log Storage & Search Engine (Protected - Internal Mesh Only)
+  opensearch:
+    image: opensearchproject/opensearch:2.12.0
+    container_name: logintel-opensearch-prod
+    restart: always
+    environment:
+      - cluster.name=logintel-prod-cluster
+      - node.name=logintel-prod-node-01
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - "OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g"
+      - "DISABLE_INSTALL_DEMO_CONFIG=true"
+      - "DISABLE_SECURITY_PLUGIN=true"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    volumes:
+      - opensearch_prod_data:/usr/share/opensearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    networks:
+      - logintel-prod-network
+    # NOT exposed to public host ports in production (Security Hardened)
+
+  # 3. Log Ingestion & Forwarding Layer
+  fluent-bit:
+    image: fluent/fluent-bit:3.0
+    container_name: logintel-fluentbit-prod
+    restart: always
+    volumes:
+      - ./fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
+      - ./fluent-bit/parsers.conf:/fluent-bit/etc/parsers.conf:ro
+    ports:
+      - "5140:5140/udp"    # Syslog UDP Ingestion from external network firewalls/routers
+    depends_on:
+      opensearch:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    networks:
+      - logintel-prod-network
+
+  # 4. FastAPI Backend Application & Threat Detection Engine (Internal Mesh Only)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: logintel-backend-prod
+    restart: always
+    environment:
+      - ENVIRONMENT=production
+      - SECRET_KEY=${SECRET_KEY}
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-logintel}
+      - OPENSEARCH_HOST=opensearch
+      - OPENSEARCH_PORT=9200
+      - OPENSEARCH_USE_SSL=false
+      - SYSLOG_ENABLED=true
+      - BACKEND_CORS_ORIGINS=${PRODUCTION_CORS_ORIGINS:-http://localhost,https://localhost}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s -f http://localhost:8000/api/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 25s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      opensearch:
+        condition: service_healthy
+    networks:
+      - logintel-prod-network
+    # In production, accessed exclusively through Frontend Nginx reverse proxy
+
+  # 5. React Web Dashboard UI & Nginx Reverse Proxy (Public Entrypoint)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: logintel-frontend-prod
+    restart: always
+    ports:
+      - "80:80"            # Public HTTP Port (redirects to 443 if SSL configured)
+      - "443:443"          # Public HTTPS Port (TLS termination)
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:80/ || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - logintel-prod-network
+
+  # 6. Heterogeneous Log Simulator (Manual / On-Demand via Admin Center)
+  log-simulator:
+    build:
+      context: ./log-simulator
+      dockerfile: Dockerfile
+    container_name: logintel-simulator-prod
+    restart: "no"          # On-demand only in production
+    profiles:
+      - testing            # Run only when explicitly started via: docker compose --profile testing up
+    environment:
+      - API_URL=http://backend:8000/api/logs/ingest
+      - SIM_MODE=stream
+      - INTERVAL=5.0
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - logintel-prod-network
+
+volumes:
+  postgres_prod_data:
+  opensearch_prod_data:
+
+networks:
+  logintel-prod-network:
+    driver: bridge

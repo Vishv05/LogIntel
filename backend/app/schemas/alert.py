@@ -41,8 +41,12 @@ class AlertOut(AlertBase):
     resolved_at: Optional[datetime] = None
     resolved_by: Optional[str] = None
     resolution_notes: Optional[str] = None
+    risk_score: Optional[int] = None
+    risk_level: Optional[str] = None
+    mitre: Optional[dict] = None
 
     model_config = ConfigDict(from_attributes=True)
+
 
 
 class AlertStats(BaseModel):

@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.npm/
+.eslintcache
+.env
+.env.*
+!.env.example

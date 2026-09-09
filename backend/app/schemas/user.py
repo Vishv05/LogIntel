@@ -7,12 +7,19 @@ class UserBase(BaseModel):
     username: str = Field(..., min_length=3, max_length=50)
     email: str
     full_name: Optional[str] = None
-    role: str = "security_analyst"  # admin, security_analyst
+    role: str = "user"  # admin, security_analyst, viewer, user
     is_active: bool = True
 
 
 class UserCreate(UserBase):
-    password: str = Field(..., min_length=6)
+    password: str = Field(..., min_length=4)
+
+
+class UserRegister(BaseModel):
+    email: str
+    password: str = Field(..., min_length=4)
+    username: Optional[str] = None
+    full_name: Optional[str] = None
 
 
 class UserUpdate(BaseModel):

@@ -6,11 +6,17 @@ class OverviewStats(BaseModel):
     total_logs: int
     critical_events: int
     active_devices: int
+    total_devices: int = 0
+    warning_devices: int = 0
+    offline_devices: int = 0
     open_alerts: int
     total_alerts: int
+    total_incidents: int = 0
+    open_incidents: int = 0
     events_last_hour: int
     failed_logins: int
     blocked_connections: int
+
 
 
 class TimelinePoint(BaseModel):

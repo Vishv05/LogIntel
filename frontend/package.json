@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:user": "vite --port 3000",
+    "dev:admin": "vite --port 3001",
     "build": "vite build",
     "preview": "vite preview"
   },

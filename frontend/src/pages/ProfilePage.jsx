@@ -62,7 +62,7 @@ export const ProfilePage = () => {
                     : 'bg-blue-950 text-blue-400 border border-blue-600/60'
                 }`}
               >
-                {isAdmin() ? 'SECURITY ADMINISTRATOR' : 'SOC SECURITY ANALYST'}
+                {isAdmin() ? 'ADMINISTRATOR' : 'STANDARD USER'}
               </span>
             </div>
           </div>

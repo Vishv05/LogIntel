@@ -1,6 +1,7 @@
+import json
 from datetime import datetime
 from typing import Any, Dict, Optional
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class DetectionRuleBase(BaseModel):
@@ -13,6 +14,16 @@ class DetectionRuleBase(BaseModel):
     window_seconds: int = 60
     conditions: Optional[Dict[str, Any]] = Field(default_factory=dict)
     is_enabled: bool = True
+
+    @field_validator("conditions", mode="before")
+    @classmethod
+    def parse_conditions(cls, v):
+        if isinstance(v, str):
+            try:
+                return json.loads(v)
+            except Exception:
+                return {}
+        return v or {}
 
 
 class DetectionRuleCreate(DetectionRuleBase):

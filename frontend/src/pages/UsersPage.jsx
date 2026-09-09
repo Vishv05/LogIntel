@@ -12,7 +12,7 @@ export const UsersPage = () => {
     email: '',
     password: '',
     full_name: '',
-    role: 'security_analyst',
+    role: 'user',
     is_active: true,
   });
 
@@ -37,7 +37,7 @@ export const UsersPage = () => {
     try {
       await adminService.createUser(formValues);
       setShowModal(false);
-      setFormValues({ username: '', email: '', password: '', full_name: '', role: 'security_analyst', is_active: true });
+      setFormValues({ username: '', email: '', password: '', full_name: '', role: 'user', is_active: true });
       fetchUsers();
     } catch (e) {
       alert('Failed to create user: ' + (e.response?.data?.detail || e.message));
@@ -106,10 +106,20 @@ export const UsersPage = () => {
                         className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                           u.role === 'admin'
                             ? 'bg-cyan-950 text-cyan-400 border border-cyan-800/60'
+                            : u.role === 'security_analyst'
+                            ? 'bg-purple-950 text-purple-400 border border-purple-800/60'
+                            : u.role === 'viewer'
+                            ? 'bg-amber-950 text-amber-400 border border-amber-800/60'
                             : 'bg-blue-950 text-blue-400 border border-blue-800/60'
                         }`}
                       >
-                        {u.role === 'admin' ? 'ADMINISTRATOR' : 'SECURITY ANALYST'}
+                        {u.role === 'admin'
+                          ? 'ADMINISTRATOR'
+                          : u.role === 'security_analyst'
+                          ? 'SECURITY ANALYST'
+                          : u.role === 'viewer'
+                          ? 'VIEWER'
+                          : 'STANDARD USER'}
                       </span>
                     </td>
                     <td className="p-3 whitespace-nowrap">
@@ -209,8 +219,10 @@ export const UsersPage = () => {
                   onChange={(e) => setFormValues({ ...formValues, role: e.target.value })}
                   className="w-full cyber-input"
                 >
-                  <option value="security_analyst">Security Analyst (Monitoring, Search, Triage)</option>
-                  <option value="admin">Administrator (Full System & Policy Access)</option>
+                  <option value="user">Standard User (Operations & Incident Triage)</option>
+                  <option value="security_analyst">Security Analyst (SOC Investigations & Rule Performance)</option>
+                  <option value="viewer">Viewer (Read-Only Telemetry & Dashboards)</option>
+                  <option value="admin">Administrator (Full Administrative & Governance Access)</option>
                 </select>
               </div>
 

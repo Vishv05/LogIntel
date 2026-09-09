@@ -36,6 +36,8 @@ class LogService:
         log_data["event_type"] = event_type
         log_data["device_id"] = device_id
         log_data["device_name"] = device_name
+        if "message" not in log_data or not log_data["message"]:
+            log_data["message"] = f"{source_type.upper()} {event_type} event on {device_name}"
 
         # 2. Update device heartbeat or auto-register if new
         existing_device = db.query(Device).filter(Device.device_id == device_id).first()

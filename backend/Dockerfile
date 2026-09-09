@@ -13,10 +13,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application source
-COPY . .
+ENV PYTHONPATH=/app
 
-# Expose FastAPI port
+# Copy application source into /app/backend
+COPY . /app/backend/
+
+# Expose FastAPI port and Syslog UDP port
 EXPOSE 8000
 EXPOSE 5140/udp
 

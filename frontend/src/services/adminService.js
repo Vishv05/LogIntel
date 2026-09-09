@@ -1,6 +1,92 @@
 import api from './api';
 
 export const adminService = {
+  // Platform Overview
+  getOverview: async () => {
+    const response = await api.get('/admin/overview');
+    return response.data;
+  },
+
+  // Topology Manager
+  getTopology: async () => {
+    const response = await api.get('/admin/topology');
+    return response.data;
+  },
+
+  // Log Source Health & Ingestion Coverage
+  getSourceHealth: async () => {
+    const response = await api.get('/admin/sources/health');
+    return response.data;
+  },
+
+  // Detection Rule Performance & Effectiveness
+  getRulePerformance: async () => {
+    const response = await api.get('/admin/rules/performance');
+    return response.data;
+  },
+
+  // Alert Policies
+  getAlertPolicies: async () => {
+    const response = await api.get('/admin/alert-policies');
+    return response.data;
+  },
+
+  updateAlertPolicies: async (policies) => {
+    const response = await api.put('/admin/alert-policies', { policies });
+    return response.data;
+  },
+
+  // System Health Center
+  getSystemHealth: async () => {
+    const response = await api.get('/admin/system/health');
+    return response.data;
+  },
+
+  // Privileged Access Monitoring
+  getPrivilegedAudit: async (params = {}) => {
+    const response = await api.get('/admin/audit/privileged', { params });
+    return response.data;
+  },
+
+  // Storage & Retention Management
+  getStorageRetention: async () => {
+    const response = await api.get('/admin/storage/retention');
+    return response.data;
+  },
+
+  updateStorageRetention: async (settings) => {
+    const response = await api.put('/admin/storage/retention', { settings });
+    return response.data;
+  },
+
+  // Log Simulator Control Center
+  runSimulator: async (simData) => {
+    const response = await api.post('/admin/simulator/generate', simData);
+    return response.data;
+  },
+
+  // Enterprise Security Settings
+  getSecuritySettings: async () => {
+    const response = await api.get('/admin/security/settings');
+    return response.data;
+  },
+
+  updateSecuritySettings: async (settings) => {
+    const response = await api.put('/admin/security/settings', { settings });
+    return response.data;
+  },
+
+  // Third-Party Integrations
+  getIntegrations: async () => {
+    const response = await api.get('/admin/integrations');
+    return response.data;
+  },
+
+  updateIntegrations: async (integrations) => {
+    const response = await api.put('/admin/integrations', { integrations });
+    return response.data;
+  },
+
   // User Management
   getUsers: async () => {
     const response = await api.get('/users');
@@ -59,3 +145,5 @@ export const adminService = {
     return response.data;
   },
 };
+
+export default adminService;

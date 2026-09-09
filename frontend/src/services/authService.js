@@ -10,6 +10,20 @@ export const authService = {
     return response.data;
   },
 
+  register: async (email, password, fullName, username) => {
+    const response = await api.post('/auth/register', {
+      email,
+      password,
+      full_name: fullName,
+      username: username || email.split('@')[0],
+    });
+    if (response.data.access_token) {
+      localStorage.setItem('logintel_token', response.data.access_token);
+      localStorage.setItem('logintel_user', JSON.stringify(response.data.user));
+    }
+    return response.data;
+  },
+
   logout: async () => {
     try {
       await api.post('/auth/logout');

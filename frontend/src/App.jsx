@@ -8,6 +8,9 @@ import { LogExplorerPage } from './pages/LogExplorerPage';
 import { AlertsPage } from './pages/AlertsPage';
 import { DevicesPage } from './pages/DevicesPage';
 import { AnalyticsPage } from './pages/AnalyticsPage';
+import { IncidentsPage } from './pages/IncidentsPage';
+import { IncidentDetailPage } from './pages/IncidentDetailPage';
+import { ThreatIntelPage } from './pages/ThreatIntelPage';
 import { DetectionRulesPage } from './pages/DetectionRulesPage';
 import { UsersPage } from './pages/UsersPage';
 import { AuditLogsPage } from './pages/AuditLogsPage';
@@ -19,6 +22,7 @@ export const App = () => {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<LoginPage initialRegister={true} />} />
 
           <Route
             path="/dashboard"
@@ -34,6 +38,33 @@ export const App = () => {
             element={
               <ProtectedRoute>
                 <LogExplorerPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/incidents"
+            element={
+              <ProtectedRoute>
+                <IncidentsPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/incidents/:id"
+            element={
+              <ProtectedRoute>
+                <IncidentDetailPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/threat-intel"
+            element={
+              <ProtectedRoute>
+                <ThreatIntelPage />
               </ProtectedRoute>
             }
           />

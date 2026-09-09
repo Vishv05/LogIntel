@@ -57,5 +57,5 @@ def admin_headers():
 
 @pytest.fixture
 def analyst_headers():
-    token = create_access_token(subject="analyst", role="security_analyst")
+    token = create_access_token(subject="analyst", role="user")
     return {"Authorization": f"Bearer {token}"}

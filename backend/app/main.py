@@ -15,6 +15,9 @@ from backend.app.api.analytics import router as analytics_router
 from backend.app.api.rules import router as rules_router
 from backend.app.api.users import router as users_router
 from backend.app.api.audit import router as audit_router
+from backend.app.api.incidents import router as incidents_router
+from backend.app.api.threat_intel import router as threat_intel_router
+from backend.app.api.admin import router as admin_router
 from backend.app.utils.seed_data import seed_database_and_logs
 from backend.app.utils.syslog_server import start_syslog_server
 
@@ -69,6 +72,9 @@ app.include_router(analytics_router, prefix=settings.API_V1_STR)
 app.include_router(rules_router, prefix=settings.API_V1_STR)
 app.include_router(users_router, prefix=settings.API_V1_STR)
 app.include_router(audit_router, prefix=settings.API_V1_STR)
+app.include_router(incidents_router, prefix=settings.API_V1_STR)
+app.include_router(threat_intel_router, prefix=settings.API_V1_STR)
+app.include_router(admin_router, prefix=settings.API_V1_STR)
 
 
 @app.get("/")

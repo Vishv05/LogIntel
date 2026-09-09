@@ -22,4 +22,13 @@ export const logService = {
     });
     return response.data;
   },
+
+  explainLog: async (logOrId) => {
+    if (typeof logOrId === 'string') {
+      const response = await api.get(`/logs/${logOrId}/explain`);
+      return response.data;
+    }
+    const response = await api.post('/logs/explain', logOrId);
+    return response.data;
+  },
 };

@@ -4,9 +4,27 @@ from sqlalchemy.orm import Session
 from backend.app.core.opensearch import log_storage
 from backend.app.models.alert import Alert
 from backend.app.services.audit_service import AuditService
+from backend.app.services.risk_service import RiskEngine
 
 
 class AlertService:
+    @staticmethod
+    def _enrich_alert(alert: Optional[Alert]) -> Optional[Alert]:
+        if not alert:
+            return None
+        risk_info = RiskEngine.calculate_risk(
+            severity=alert.severity,
+            event_count=alert.event_count,
+            source_ip=alert.source_ip,
+            device_id=alert.device_id,
+            rule_id=alert.rule_id,
+            message=alert.description
+        )
+        setattr(alert, "risk_score", risk_info["score"])
+        setattr(alert, "risk_level", risk_info["level"])
+        setattr(alert, "mitre", risk_info.get("mitre"))
+        return alert
+
     @staticmethod
     def get_alerts(
         db: Session,
@@ -29,11 +47,15 @@ class AlertService:
 
         total = query.count()
         alerts = query.order_by(Alert.created_at.desc()).offset(skip).limit(limit).all()
+        for a in alerts:
+            AlertService._enrich_alert(a)
         return total, alerts
 
     @staticmethod
     def get_alert_by_id(db: Session, alert_id: str) -> Optional[Alert]:
-        return db.query(Alert).filter(Alert.alert_id == alert_id).first()
+        alert = db.query(Alert).filter(Alert.alert_id == alert_id).first()
+        return AlertService._enrich_alert(alert)
+
 
     @staticmethod
     def acknowledge_alert(
@@ -65,7 +87,7 @@ class AlertService:
             details=f"Alert {alert_id} acknowledged: {alert.title}",
             ip_address=ip_address
         )
-        return alert
+        return AlertService._enrich_alert(alert)
 
     @staticmethod
     def resolve_alert(
@@ -97,7 +119,8 @@ class AlertService:
             details=f"Alert {alert_id} resolved. Notes: {notes or 'No notes'}",
             ip_address=ip_address
         )
-        return alert
+        return AlertService._enrich_alert(alert)
+
 
     @staticmethod
     def get_alert_stats(db: Session) -> Dict:

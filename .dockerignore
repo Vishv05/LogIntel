@@ -1,0 +1,44 @@
+# Version control
+.git
+.gitignore
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+backend/.venv/
+.venv/
+env/
+venv/
+
+# Testing & caches
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local databases
+*.db
+*.sqlite
+*.sqlite3
+logintel.db
+logintel_opensearch_store.db
+test_logintel.db
+
+# Frontend build artifacts
+frontend/node_modules/
+node_modules/
+frontend/dist/
+dist/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# IDE & OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

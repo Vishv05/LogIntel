@@ -24,49 +24,97 @@ def seed_database_and_logs(db_engine=None, session_maker=None):
     db: Session = target_session()
 
     try:
-        # 1. Seed Users
-        if db.query(User).count() == 0:
-            logger.info("Seeding initial users...")
-            users_to_create = [
-                User(
-                    username="admin",
-                    email="admin@logintel.org",
-                    hashed_password=get_password_hash("adminpassword123"),
-                    full_name="System Administrator",
-                    role="admin",
-                    is_active=True,
-                    created_at=datetime.now(timezone.utc)
-                ),
-                User(
-                    username="analyst",
-                    email="analyst@logintel.org",
-                    hashed_password=get_password_hash("analystpassword123"),
-                    full_name="SOC Lead Analyst",
-                    role="security_analyst",
-                    is_active=True,
-                    created_at=datetime.now(timezone.utc)
-                ),
-                User(
-                    username="vishv",
-                    email="vishv@logintel.org",
-                    hashed_password=get_password_hash("vishvpassword123"),
-                    full_name="Bhavsar Vishv Jigneshkumar (202201619010239)",
-                    role="admin",
-                    is_active=True,
-                    created_at=datetime.now(timezone.utc)
-                ),
-                User(
-                    username="dhruvil",
-                    email="dhruvil@logintel.org",
-                    hashed_password=get_password_hash("dhruvilpassword123"),
-                    full_name="Sojitra Dhruvil Vipulbhai (202201619010336)",
-                    role="admin",
-                    is_active=True,
-                    created_at=datetime.now(timezone.utc)
-                ),
-            ]
-            db.add_all(users_to_create)
-            db.commit()
+        # 1. Seed or synchronize Users (Admin: admin@gmail.com / admin123, User: any mail-id & password)
+        admin_user = db.query(User).filter(
+            (User.email == "admin@gmail.com") | (User.username == "admin")
+        ).first()
+
+        if not admin_user:
+            admin_user = User(
+                username="admin",
+                email="admin@gmail.com",
+                hashed_password=get_password_hash("admin123"),
+                full_name="System Administrator",
+                role="admin",
+                is_active=True,
+                created_at=datetime.now(timezone.utc)
+            )
+            db.add(admin_user)
+        else:
+            admin_user.email = "admin@gmail.com"
+            admin_user.role = "admin"
+            admin_user.hashed_password = get_password_hash("admin123")
+
+        # Ensure default User account (user@gmail.com / user123)
+        default_user = db.query(User).filter(
+            (User.email == "user@gmail.com") | (User.username == "user")
+        ).first()
+
+        if not default_user:
+            default_user = User(
+                username="user",
+                email="user@gmail.com",
+                hashed_password=get_password_hash("user123"),
+                full_name="Standard User",
+                role="user",
+                is_active=True,
+                created_at=datetime.now(timezone.utc)
+            )
+            db.add(default_user)
+        else:
+            default_user.role = "user"
+            default_user.hashed_password = get_password_hash("user123")
+
+        # Ensure analyst test account exists with role 'user'
+        analyst_user = db.query(User).filter(User.username == "analyst").first()
+        if not analyst_user:
+            analyst_user = User(
+                username="analyst",
+                email="analyst@logintel.org",
+                hashed_password=get_password_hash("analystpassword123"),
+                full_name="SOC Analyst",
+                role="user",
+                is_active=True,
+                created_at=datetime.now(timezone.utc)
+            )
+            db.add(analyst_user)
+        else:
+            analyst_user.hashed_password = get_password_hash("analystpassword123")
+
+        # Ensure creator admin accounts exist (vishv / vishvpassword123, dhruvil / dhruvilpassword123)
+        vishv_user = db.query(User).filter(User.username == "vishv").first()
+        if not vishv_user:
+            vishv_user = User(
+                username="vishv",
+                email="vishv@logintel.local",
+                hashed_password=get_password_hash("vishvpassword123"),
+                full_name="Bhavsar Vishv Jigneshkumar",
+                role="admin",
+                is_active=True,
+                created_at=datetime.now(timezone.utc)
+            )
+            db.add(vishv_user)
+        else:
+            vishv_user.role = "admin"
+            vishv_user.hashed_password = get_password_hash("vishvpassword123")
+
+        dhruvil_user = db.query(User).filter(User.username == "dhruvil").first()
+        if not dhruvil_user:
+            dhruvil_user = User(
+                username="dhruvil",
+                email="dhruvil@logintel.local",
+                hashed_password=get_password_hash("dhruvilpassword123"),
+                full_name="Sojitra Dhruvil Vipulbhai",
+                role="admin",
+                is_active=True,
+                created_at=datetime.now(timezone.utc)
+            )
+            db.add(dhruvil_user)
+        else:
+            dhruvil_user.role = "admin"
+            dhruvil_user.hashed_password = get_password_hash("dhruvilpassword123")
+
+        db.commit()
 
         # 2. Seed Devices
         if db.query(Device).count() == 0:
@@ -311,6 +359,13 @@ def seed_database_and_logs(db_engine=None, session_maker=None):
             # Bulk ingest seed logs and trigger detection rules
             LogService.ingest_bulk(db, sample_logs)
             logger.info(f"Successfully seeded {len(sample_logs)} baseline logs.")
+
+        # 5. Ensure baseline correlated security incidents exist
+        from backend.app.models.incident import Incident
+        from backend.app.services.correlation_service import CorrelationEngine
+        if db.query(Incident).count() == 0:
+            logger.info("Synthesizing baseline correlated security incidents...")
+            CorrelationEngine.run_correlation(db)
 
     except Exception as e:
         logger.error(f"Error seeding database: {e}")

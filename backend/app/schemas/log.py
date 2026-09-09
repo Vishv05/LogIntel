@@ -18,7 +18,7 @@ class LogEvent(BaseModel):
     protocol: Optional[str] = None
     action: Optional[str] = None
     username: Optional[str] = None
-    message: str
+    message: str = Field(default="", description="Human-readable event message")
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
 

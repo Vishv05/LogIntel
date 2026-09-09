@@ -92,6 +92,7 @@ def search_and_explore_logs(
     destination_ip: Optional[str] = Query(None, description="Filter by destination IP"),
     action: Optional[str] = Query(None, description="ALLOW, DENY, BLOCK, etc."),
     username: Optional[str] = Query(None, description="Filter by username"),
+    protocol: Optional[str] = Query(None, description="Filter by protocol: TCP, UDP, ICMP, etc."),
     start_time: Optional[datetime] = Query(None, description="Start time ISO-8601"),
     end_time: Optional[datetime] = Query(None, description="End time ISO-8601"),
     page: int = Query(1, ge=1),
@@ -114,6 +115,7 @@ def search_and_explore_logs(
         destination_ip=destination_ip,
         action=action,
         username=username,
+        protocol=protocol,
         start_time=start_time,
         end_time=end_time,
         page=page,
@@ -133,6 +135,42 @@ def search_and_explore_logs(
     }
 
 
+@router.post("/explain", response_model=Dict[str, Any])
+def explain_log_entry(
+    payload: Dict[str, Any] = Body(...),
+    current_user: User = Depends(require_analyst_or_admin)
+):
+    """
+    AI Log Explainer: Converts technical log entry into understandable SOC intelligence,
+    explaining what happened, why it may be suspicious, affected assets, and next steps.
+    """
+    from backend.app.services.ai_explainer_service import AIExplainerService
+    log_id = payload.get("log_id") or payload.get("id")
+    if log_id:
+        existing = log_storage.get_log_by_id(log_id)
+        if existing:
+            payload = existing
+    return AIExplainerService.explain_log(payload)
+
+
+@router.get("/{log_id}/explain", response_model=Dict[str, Any])
+def explain_log_by_id(
+    log_id: str,
+    current_user: User = Depends(require_analyst_or_admin)
+):
+    """
+    AI Log Explainer by Log ID: Returns structured executive explanation for a single log.
+    """
+    from backend.app.services.ai_explainer_service import AIExplainerService
+    log_doc = log_storage.get_log_by_id(log_id)
+    if not log_doc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Log with ID '{log_id}' not found"
+        )
+    return AIExplainerService.explain_log(log_doc)
+
+
 @router.get("/{log_id}", response_model=Dict[str, Any])
 def get_log_details(
     log_id: str,
@@ -146,3 +184,4 @@ def get_log_details(
             detail=f"Log with ID '{log_id}' not found"
         )
     return log_doc
+

@@ -1,0 +1,105 @@
+{
+  "alert_policies": [
+    {
+      "severity": "CRITICAL",
+      "action": "ESCALATE_INCIDENT",
+      "notify_email": true,
+      "notify_webhook": true,
+      "notify_slack": true,
+      "auto_assign_role": "security_analyst",
+      "escalation_sla_minutes": 20,
+      "description": "Immediate incident synthesis, page on-call SOC analyst, notify Slack war-room."
+    },
+    {
+      "severity": "HIGH",
+      "action": "ESCALATE_INCIDENT",
+      "notify_email": true,
+      "notify_webhook": true,
+      "notify_slack": true,
+      "auto_assign_role": "security_analyst",
+      "escalation_sla_minutes": 60,
+      "description": "Correlate with existing incidents, notify security channel, dispatch webhook."
+    },
+    {
+      "severity": "MEDIUM",
+      "action": "ALERT",
+      "notify_email": false,
+      "notify_webhook": true,
+      "notify_slack": false,
+      "auto_assign_role": "user",
+      "escalation_sla_minutes": 240,
+      "description": "Queue in active alert triage dashboard for analyst review."
+    },
+    {
+      "severity": "LOW",
+      "action": "LOG_ONLY",
+      "notify_email": false,
+      "notify_webhook": false,
+      "notify_slack": false,
+      "auto_assign_role": "user",
+      "escalation_sla_minutes": 1440,
+      "description": "Index in search store with informational classification."
+    }
+  ],
+  "security_settings": {
+    "jwt_expiry_minutes": 1440,
+    "min_password_length": 10,
+    "require_special_char": true,
+    "max_failed_attempts": 5,
+    "lockout_duration_minutes": 30,
+    "session_inactivity_timeout_minutes": 60,
+    "enforce_mfa": false,
+    "allowed_cors_domains": [
+      "http://localhost:3000",
+      "http://localhost:3001",
+      "http://localhost:5173",
+      "http://127.0.0.1:3000"
+    ]
+  },
+  "retention_settings": {
+    "total_capacity_gb": 500,
+    "normal_logs_days": 45,
+    "security_logs_days": 120,
+    "incident_logs_days": 365,
+    "auto_purge_enabled": true,
+    "compression_ratio": "3.8:1"
+  },
+  "integrations": {
+    "slack": {
+      "enabled": false,
+      "webhook_url": "",
+      "channel": "#security-war-room",
+      "notify_on": [
+        "CRITICAL",
+        "HIGH"
+      ]
+    },
+    "webhook": {
+      "enabled": false,
+      "endpoint_url": "",
+      "secret_token": "",
+      "notify_on": [
+        "CRITICAL",
+        "HIGH",
+        "MEDIUM"
+      ]
+    },
+    "email": {
+      "enabled": false,
+      "smtp_host": "",
+      "smtp_port": 587,
+      "sender_email": "soc-alerts@logintel.internal",
+      "smtp_password": "",
+      "recipients": [
+        "soc-team@logintel.internal"
+      ]
+    },
+    "syslog_forwarder": {
+      "enabled": true,
+      "target_host": "10.0.0.99",
+      "target_port": 514,
+      "protocol": "UDP",
+      "format": "RFC5424"
+    }
+  }
+}

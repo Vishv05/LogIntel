@@ -233,6 +233,7 @@ class LogStorageEngine:
         destination_ip: Optional[str] = None,
         action: Optional[str] = None,
         username: Optional[str] = None,
+        protocol: Optional[str] = None,
         start_time: Optional[datetime] = None,
         end_time: Optional[datetime] = None,
         page: int = 1,
@@ -283,6 +284,11 @@ class LogStorageEngine:
             conditions.append("LOWER(username) = ?")
             params.append(username.lower())
 
+        if protocol:
+            conditions.append("UPPER(protocol) = ?")
+            params.append(protocol.upper())
+
+
         if start_time:
             conditions.append("timestamp >= ?")
             params.append(start_time.isoformat())
@@ -320,7 +326,12 @@ class LogStorageEngine:
             """
             cursor.execute(data_query, params + [page_size, offset])
             rows = cursor.fetchall()
-            logs = [json.loads(row[0]) for row in rows]
+            logs = []
+            for row in rows:
+                doc = json.loads(row[0])
+                if not doc.get("message"):
+                    doc["message"] = f"{doc.get('source_type', 'server').upper()} {doc.get('event_type', 'EVENT')} on {doc.get('device_name', doc.get('device_id', 'device'))}"
+                logs.append(doc)
 
         return total, logs
 
